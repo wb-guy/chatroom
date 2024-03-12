@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<!-- Created with https://studio.penguinmod.com/PenguinMod-Packager/ -->
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <!-- We only include this to explicitly loosen the CSP of various packager environments. It does not provide any security. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src * 'self' 'unsafe-inline' 'unsafe-eval' data: blob:">
+  <title>Chatroom</title>
+  <style>
+    body {
+      color: #ffffff;
+      font-family: sans-serif;
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+    }
+    :root, body.is-fullscreen {
+      background-color: #000000;
+    }
+    [hidden] {
+      display: none !important;
+    }
+    h1 {
+      font-weight: normal;
+    }
+    a {
+      color: inherit;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    #app, #loading, #error, #launch {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+    .screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      cursor: default;
+      user-select: none;
+      -webkit-user-select: none;
+      background-color: #000000;
+    }
+    #launch {
+      background-color: rgba(0, 0, 0, 0.7);
+      cursor: pointer;
+    }
+    .green-flag {
+      width: 80px;
+      height: 80px;
+      padding: 16px;
+      border-radius: 100%;
+      background: rgba(255, 255, 255, 0.75);
+      border: 3px solid hsla(0, 100%, 100%, 1);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-sizing: border-box;
+    }
+    #loading {
+      
+    }
+    .progress-bar-outer {
+      border: 1px solid currentColor;
+      height: 10px;
+      width: 200px;
+      max-width: 200px;
+    }
+    .progress-bar-inner {
+      height: 100%;
+      width: 0;
+      background-color: currentColor;
+    }
+    .loading-text, noscript {
+      font-weight: normal;
+      font-size: 36px;
+      margin: 0 0 16px;
+    }
+    .loading-image {
+      margin: 0 0 16px;
+    }
+    #error-message, #error-stack {
+      font-family: monospace;
+      max-width: 600px;
+      white-space: pre-wrap;
+      user-select: text;
+      -webkit-user-select: text;
+    }
+    #error-stack {
+      text-align: left;
+      max-height: 200px;
+      overflow: auto;
+    }
+    .control-button {
+      width: 2rem;
+      height: 2rem;
+      padding: 0.375rem;
+      margin-top: 0.5rem;
+      margin-bottom: 0.5rem;
+      user-select: none;
+      -webkit-user-select: none;
+      cursor: pointer;
+      border: 0;
+      border-radius: 4px;
+    }
+    .control-button:hover {
+      background: #00c3ff26;
+    }
+    .control-button.active {
+      background: #00c3ff59;
+    }
+    .fullscreen-button {
+      background: white !important;
+    }
+    .standalone-fullscreen-button {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      border-radius: 0 0 0 4px;
+      padding: 4px;
+      cursor: pointer;
+    }
+    .sc-canvas {
+      cursor: auto;
+    }
+    .sc-monitor-root[data-opcode^="data_"] .sc-monitor-value-color {
+      background-color: #ff8c1a;
+    }
+    .sc-monitor-row-value-outer {
+      background-color: #9c9c9c;
+    }
+    .sc-monitor-row-value-editing .sc-monitor-row-value-outer {
+      background-color: #828282;
+    }
+    
+  </style>
+  <meta name="theme-color" content="#000000">
+  
+</head>
+<body>
+  <div id="app"></div>
+
+  <div id="launch" class="screen" hidden title="Click to start">
+    <div class="green-flag">
+      <svg viewBox="0 0 16.63 17.5" width="42" height="44">
+        <defs><style>.cls-1,.cls-2{fill:#007AF4;stroke:#003080;stroke-linecap:round;stroke-linejoin:round;}.cls-2{stroke-width:1.5px;}</style></defs>
+        <path class="cls-1" d="M.75,2A6.44,6.44,0,0,1,8.44,2h0a6.44,6.44,0,0,0,7.69,0V12.4a6.44,6.44,0,0,1-7.69,0h0a6.44,6.44,0,0,0-7.69,0"/>
+        <line class="cls-2" x1="0.75" y1="16.75" x2="0.75" y2="0.75"/>
+      </svg>
+    </div>
+  </div>
+
+  <div id="loading" class="screen">
+    <noscript>Enable JavaScript</noscript>
+    
+    
+    <div class="progress-bar-outer"><div class="progress-bar-inner" id="loading-inner"></div></div>
+  </div>
+
+  <div id="error" class="screen" hidden>
+    <h1>Error</h1>
+    <details>
+      <summary id="error-message"></summary>
+      <p id="error-stack"></p>
+    </details>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    const appElement = document.getElementById('app');
+    const launchScreen = document.getElementById('launch');
+    const loadingScreen = document.getElementById('loading');
+    const loadingInner = document.getElementById('loading-inner');
+    const errorScreen = document.getElementById('error');
+    const errorScreenMessage = document.getElementById('error-message');
+    const errorScreenStack = document.getElementById('error-stack');
+
+    const handleError = (error) => {
+      console.error(error);
+      if (!errorScreen.hidden) return;
+      errorScreen.hidden = false;
+      errorScreenMessage.textContent = '' + error;
+      let debug = error && error.stack || 'no stack';
+      debug += '\nUser agent: ' + navigator.userAgent;
+      errorScreenStack.textContent = debug;
+    };
+    const setProgress = (progress) => {
+      if (loadingInner) loadingInner.style.width = progress * 100 + '%';
+    };
+    const interpolate = (a, b, t) => a + t * (b - a);
+
+    try {
+      setProgress(0.1);
+
+      const scaffolding = new Scaffolding.Scaffolding();
+      scaffolding.width = 480;
+      scaffolding.height = 360;
+      scaffolding.resizeMode = "preserve-ratio";
+      scaffolding.editableLists = true;
+      scaffolding.usePackagedRuntime = true;
+      scaffolding.setup();
+      scaffolding.appendTo(appElement);
+
+      const vm = scaffolding.vm;
+      window.scaffolding = scaffolding;
+      window.vm = scaffolding.vm;
+      window.Scratch = {
+        vm,
+        renderer: vm.renderer,
+        audioEngine: vm.runtime.audioEngine,
+        bitmapAdapter: vm.runtime.v2BitmapAdapter,
+        videoProvider: vm.runtime.ioDevices.video.provider
+      };
+
+      scaffolding.setUsername("player####".replace(/#/g, () => Math.floor(Math.random() * 10)));
+      scaffolding.setAccentColor("#00c3ff");
+
+      try {
+        scaffolding.addCloudProvider(new Scaffolding.Cloud.WebSocketProvider(["wss://clouddata.turbowarp.org","wss://clouddata.turbowarp.xyz"], "p4-@Project.pmp"));
+      } catch (error) {
+        console.error(error);
+      }
+
+      vm.setTurboMode(false);
+      if (vm.setInterpolation) vm.setInterpolation(false);
+      if (vm.setFramerate) vm.setFramerate(30);
+      if (vm.renderer.setUseHighQualityRender) vm.renderer.setUseHighQualityRender(false);
+      if (vm.setRuntimeOptions) vm.setRuntimeOptions({
+        fencing: true,
+        miscLimits: true,
+        maxClones: 300,
+        dangerousOptimizations: false
+      });
+      if (vm.setCompilerOptions) vm.setCompilerOptions({
+        enabled: true,
+        warpTimer: false
+      });
+      if (vm.renderer.setMaxTextureDimension) vm.renderer.setMaxTextureDimension(2048);
+
+      if (typeof ScaffoldingAddons !== 'undefined') {
+        ScaffoldingAddons.run(scaffolding, {"gamepad":false,"pointerlock":false,"specialCloudBehaviors":false,"unsafeCloudBehaviors":false,"pause":false});
+      }
+
+      scaffolding.setExtensionSecurityManager({
+        getSandboxMode: () => 'unsandboxed',
+        canLoadExtensionFromProject: () => true
+      });
+      for (const extension of ["data:text/javascript;,(function(Scratch)%20%7B%20%2F%2F%20Name%3A%20Numerical%20Encoding%0A%2F%2F%20ID%3A%20cs2627883NumericalEncoding%0A%2F%2F%20Description%3A%20Encode%20strings%20as%20numbers%20for%20cloud%20variables.%0A%2F%2F%20By%3A%20cs2627883%20%3Chttps%3A%2F%2Fscratch.mit.edu%2Fusers%2Fcs2627883%2F%3E%0A%2F%2F%20License%3A%20MIT%0A%0A%2F%2F%20https%3A%2F%2Fgithub.com%2FCS2627883%2FTurbowarp-Encoding-Extension%2Fblob%2Fmain%2FEncoding.js%0A%0A%2F*%20generated%20l10n%20code%20*%2FScratch.translate.setup(%7B%22de%22%3A%7B%22_Numerical%20Encoding%22%3A%22Numerisches%20Enkodieren%22%7D%2C%22it%22%3A%7B%22_Decode%20%5BENCODED%5D%20back%20to%20text%22%3A%22decodifica%20%5BENCODED%5D%20in%20testo%22%2C%22_Encode%20%5BDATA%5D%20to%20numbers%22%3A%22codifica%20%5BDATA%5D%20in%20numeri%22%2C%22_Hello!%22%3A%22Ciao!%22%2C%22_Numerical%20Encoding%22%3A%22Codifica%20Numerica%22%2C%22_decoded%22%3A%22decodificato%22%2C%22_encoded%22%3A%22codificato%22%7D%2C%22ja%22%3A%7B%22_Hello!%22%3A%22%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF!%22%7D%2C%22nb%22%3A%7B%22_Decode%20%5BENCODED%5D%20back%20to%20text%22%3A%22Dekode%20%5BENCODED%5D%20tilbake%20til%20tekst%22%2C%22_Encode%20%5BDATA%5D%20to%20numbers%22%3A%22Kode%20%5BDATA%5D%20til%20tall%22%2C%22_Hello!%22%3A%22Hei!%22%2C%22_Numerical%20Encoding%22%3A%22Numerisk%20koding%22%2C%22_decoded%22%3A%22dekodet%22%2C%22_encoded%22%3A%22kodet%22%7D%2C%22nl%22%3A%7B%22_Decode%20%5BENCODED%5D%20back%20to%20text%22%3A%22decodeer%20%5BENCODED%5D%20terug%20naar%20tekst%22%2C%22_Encode%20%5BDATA%5D%20to%20numbers%22%3A%22codeer%20%5BDATA%5D%20naar%20getallen%22%2C%22_Hello!%22%3A%22Hallo!%22%2C%22_Numerical%20Encoding%22%3A%22Numerieke%20Codering%22%2C%22_decoded%22%3A%22gedecodeerd%22%2C%22_encoded%22%3A%22gecodeerd%22%7D%2C%22ru%22%3A%7B%22_Hello!%22%3A%22%D0%9F%D1%80%D0%B8%D0%B2%D0%B5%D1%82!%22%7D%2C%22zh-cn%22%3A%7B%22_Decode%20%5BENCODED%5D%20back%20to%20text%22%3A%22%E8%A7%A3%E7%A0%81%E6%95%B0%E5%AD%97%5BENCODED%5D%E4%B8%BA%E6%96%87%E6%9C%AC%22%2C%22_Encode%20%5BDATA%5D%20to%20numbers%22%3A%22%E7%BC%96%E7%A0%81%E6%96%87%E6%9C%AC%5BDATA%5D%E4%B8%BA%E6%95%B0%E5%AD%97%22%2C%22_Hello!%22%3A%22%E4%BD%A0%E5%A5%BD%EF%BC%81%22%2C%22_Numerical%20Encoding%22%3A%22%E6%95%B0%E5%AD%97%E7%BC%96%E7%A0%81%22%2C%22_decoded%22%3A%22%E8%A7%A3%E7%A0%81%E6%95%B0%E6%8D%AE%22%2C%22_encoded%22%3A%22%E7%BC%96%E7%A0%81%E6%95%B0%E6%8D%AE%22%7D%7D)%3B%2F*%20end%20generated%20l10n%20code%20*%2F(function%20(Scratch)%20%7B%0A%20%20%22use%20strict%22%3B%0A%0A%20%20%2F%2F%20There%20are%20149%2C186%20unicode%20characters%2C%20so%20the%20maximum%20character%20code%20length%20is%206%0A%20%20const%20MAX_CHAR_LEN%20%3D%206%3B%0A%0A%20%20%2F**%0A%20%20%20*%20%40param%20%7Bstring%7D%20str%0A%20%20%20*%20%40returns%20%7Bstring%7D%0A%20%20%20*%2F%0A%20%20const%20encode%20%3D%20(str)%20%3D%3E%20%7B%0A%20%20%20%20let%20encoded%20%3D%20%22%22%3B%0A%20%20%20%20for%20(let%20i%20%3D%200%3B%20i%20%3C%20str.length%3B%20%2B%2Bi)%20%7B%0A%20%20%20%20%20%20%2F%2F%20Get%20character%0A%20%20%20%20%20%20const%20char%20%3D%20String(str.charCodeAt(i))%3B%0A%20%20%20%20%20%20%2F%2F%20Pad%20encodedChar%20with%200s%20to%20ensure%20all%20encodedchars%20are%20the%20same%20length%0A%20%20%20%20%20%20const%20encodedChar%20%3D%20%220%22.repeat(MAX_CHAR_LEN%20-%20char.length)%20%2B%20char%3B%0A%20%20%20%20%20%20encoded%20%2B%3D%20encodedChar%3B%0A%20%20%20%20%7D%0A%20%20%20%20return%20encoded%3B%0A%20%20%7D%3B%0A%0A%20%20%2F**%0A%20%20%20*%20%40param%20%7Bstring%7D%20str%0A%20%20%20*%20%40returns%20%7Bstring%7D%0A%20%20%20*%2F%0A%20%20const%20decode%20%3D%20(str)%20%3D%3E%20%7B%0A%20%20%20%20if%20(str%20%3D%3D%3D%20%22%22)%20%7B%0A%20%20%20%20%20%20return%20%22%22%3B%0A%20%20%20%20%7D%0A%20%20%20%20let%20decoded%20%3D%20%22%22%3B%0A%20%20%20%20%2F%2F%20Create%20regex%20to%20split%20by%20char%20length%0A%20%20%20%20const%20regex%20%3D%20new%20RegExp(%22.%7B1%2C%22%20%2B%20MAX_CHAR_LEN%20%2B%20%22%7D%22%2C%20%22g%22)%3B%0A%20%20%20%20%2F%2F%20Split%20into%20array%20of%20characters%0A%20%20%20%20const%20split%20%3D%20str.match(regex)%3B%0A%20%20%20%20for%20(let%20i%20%3D%200%3B%20i%20%3C%20split.length%3B%20i%2B%2B)%20%7B%0A%20%20%20%20%20%20%2F%2F%20Get%20character%20from%20char%20code%0A%20%20%20%20%20%20const%20decodedChar%20%3D%20String.fromCharCode(%2Bsplit%5Bi%5D)%3B%0A%20%20%20%20%20%20decoded%20%2B%3D%20decodedChar%3B%0A%20%20%20%20%7D%0A%20%20%20%20return%20decoded%3B%0A%20%20%7D%3B%0A%0A%20%20class%20NumericalEncodingExtension%20%7B%0A%20%20%20%20%2F**%20%40type%20%7Bstring%7Cnumber%7D%20*%2F%0A%20%20%20%20encoded%20%3D%200%3B%0A%0A%20%20%20%20%2F**%20%40type%20%7Bstring%7Cnumber%7D%20*%2F%0A%20%20%20%20decoded%20%3D%200%3B%0A%0A%20%20%20%20getInfo()%20%7B%0A%20%20%20%20%20%20return%20%7B%0A%20%20%20%20%20%20%20%20id%3A%20%22cs2627883NumericalEncoding%22%2C%0A%20%20%20%20%20%20%20%20name%3A%20Scratch.translate(%22Numerical%20Encoding%22)%2C%0A%20%20%20%20%20%20%20%20blocks%3A%20%5B%0A%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20opcode%3A%20%22NumericalEncode%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20blockType%3A%20Scratch.BlockType.COMMAND%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20text%3A%20Scratch.translate(%22Encode%20%5BDATA%5D%20to%20numbers%22)%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20arguments%3A%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20DATA%3A%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20type%3A%20Scratch.ArgumentType.STRING%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20defaultValue%3A%20Scratch.translate(%22Hello!%22)%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20opcode%3A%20%22NumericalDecode%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20blockType%3A%20Scratch.BlockType.COMMAND%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20text%3A%20Scratch.translate(%22Decode%20%5BENCODED%5D%20back%20to%20text%22)%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20arguments%3A%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20ENCODED%3A%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20type%3A%20Scratch.ArgumentType.STRING%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20defaultValue%3A%20encode(Scratch.translate(%22Hello!%22))%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20opcode%3A%20%22GetNumericalEncoded%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20blockType%3A%20Scratch.BlockType.REPORTER%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20text%3A%20Scratch.translate(%22encoded%22)%2C%0A%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20opcode%3A%20%22GetNumericalDecoded%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20blockType%3A%20Scratch.BlockType.REPORTER%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20text%3A%20Scratch.translate(%22decoded%22)%2C%0A%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%5D%2C%0A%20%20%20%20%20%20%7D%3B%0A%20%20%20%20%7D%0A%20%20%20%20NumericalEncode(args)%20%7B%0A%20%20%20%20%20%20this.encoded%20%3D%20encode(Scratch.Cast.toString(args.DATA))%3B%0A%20%20%20%20%7D%0A%20%20%20%20NumericalDecode(args)%20%7B%0A%20%20%20%20%20%20this.decoded%20%3D%20decode(Scratch.Cast.toString(args.ENCODED))%3B%0A%20%20%20%20%7D%0A%20%20%20%20GetNumericalEncoded(args)%20%7B%0A%20%20%20%20%20%20return%20this.encoded%3B%0A%20%20%20%20%7D%0A%20%20%20%20GetNumericalDecoded(args)%20%7B%0A%20%20%20%20%20%20return%20this.decoded%3B%0A%20%20%20%20%7D%0A%20%20%7D%0A%0A%20%20Scratch.extensions.register(new%20NumericalEncodingExtension())%3B%0A%7D)(Scratch)%3B%0A%20%7D)(Scratch)%3B"]) {
+        vm.extensionManager.loadExtensionURL(extension);
+      }
+
+      vm.runtime.isProjectPermissionManagerDisabled = true;
+      
+    } catch (e) {
+      handleError(e);
+    }
+  </script>
+  
+  
+    <script>
+      const getProjectData = (function() {
+        const storage = scaffolding.storage;
+        storage.onprogress = (total, loaded) => {
+          setProgress(interpolate(0.2, 0.98, loaded / total));
+        };
+        
+        storage.addWebStore(
+          [
+            storage.AssetType.ImageVector,
+            storage.AssetType.ImageBitmap,
+            storage.AssetType.Sound,
+            storage.AssetType.Font
+          ].filter(i => i),
+          (asset) => new URL('./assets/' + asset.assetId + '.' + asset.dataFormat, location).href
+        );
+        return () => new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.onload = () => {
+          resolve(xhr.response);
+        };
+        xhr.onerror = () => {
+          if (location.protocol === 'file:') {
+            reject(new Error('Zip environment must be used from a website, not from a file URL.'));
+          } else {
+            reject(new Error('Request to load project data failed.'));
+          }
+        };
+        xhr.onprogress = (e) => {
+          if (e.lengthComputable) {
+            setProgress(interpolate(0.1, 0.2, e.loaded / e.total));
+          }
+        };
+        xhr.responseType = 'arraybuffer';
+        xhr.open('GET', "./assets/project.json");
+        xhr.send();
+      });
+      })();
+    </script>
+  <script>
+    const run = async () => {
+      const projectData = await getProjectData();
+      await scaffolding.loadProject(projectData);
+      setProgress(1);
+      loadingScreen.hidden = true;
+      if (true) {
+        scaffolding.start();
+      } else {
+        launchScreen.hidden = false;
+        launchScreen.addEventListener('click', () => {
+          launchScreen.hidden = true;
+          scaffolding.start();
+        });
+        launchScreen.focus();
+      }
+    };
+    run().catch(handleError);
+  </script>
+</body>
+</html>
